@@ -6,11 +6,12 @@ interface Props {
   hand: Card[];
   onHit: () => void;
   onStand: () => void;
+  onDouble: () => void;
   isTurn: boolean;
   phase: 'play' | 'settle';
 }
 
-export default function HandView({ hand, onHit, onStand, isTurn, phase }: Props) {
+export default function HandView({ hand, onHit, onStand, onDouble, isTurn, phase }: Props) {
   const total = hand.reduce((sum, c) => sum + (['J','Q','K'].includes(c.value) ? 10 : c.value === 'A' ? 11 : +c.value), 0);
   return (
     <div className="flex flex-col items-center">
@@ -35,6 +36,11 @@ export default function HandView({ hand, onHit, onStand, isTurn, phase }: Props)
             onClick={onHit}
             disabled={!isTurn}
           >Hit</button>
+          <button
+            className="bg-blue-500 px-4 py-2 rounded disabled:opacity-50"
+            onClick={onDouble}
+            disabled={!isTurn}
+          >Double</button>
           <button
             className="bg-red-500 px-4 py-2 rounded disabled:opacity-50"
             onClick={onStand}

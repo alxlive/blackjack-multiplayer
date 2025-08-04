@@ -63,6 +63,10 @@ export default function App() {
     if (seatIdx !== null) socket.emit('stand', { seatIdx });
   };
 
+  const handleDouble = () => {
+    if (seatIdx !== null) socket.emit('double', { seatIdx });
+  };
+
   if (seatIdx === null) {
     return <SeatSelector onJoin={handleJoin} />;
   }
@@ -90,6 +94,7 @@ export default function App() {
           hand={seat.hand}
           onHit={handleHit}
           onStand={handleStand}
+          onDouble={handleDouble}
           isTurn={state.currentSeat === seatIdx}
           phase={state.phase}
         />
