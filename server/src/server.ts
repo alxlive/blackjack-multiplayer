@@ -9,6 +9,13 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 const game = new Game();
 
+function scheduleNextRound() {
+  setTimeout(() => {
+    game.prepareNextRound();
+    io.emit('state', game.state);
+  }, 5000);
+}
+
 io.on('connection', socket => {
   socket.on('join', ({ name }) => {
     const seatIdx = game.joinSeat(socket.id, name);
@@ -21,15 +28,28 @@ io.on('connection', socket => {
     io.emit('state', game.state);
     game.startPlay();
     io.emit('state', game.state);
+    if (game.state.phase === 'settle') scheduleNextRound();
   });
 
   socket.on('hit', ({ seatIdx }) => {
     game.hit(seatIdx);
     io.emit('state', game.state);
+    if (game.state.phase === 'settle') scheduleNextRound();
   });
 
   socket.on('stand', ({ seatIdx }) => {
     game.stand(seatIdx);
+    io.emit('state', game.state);
+    if (game.state.phase === 'settle') scheduleNextRound();
+  });
+
+  socket.on('quit', () => {
+    game.leaveSeat(socket.id);
+    io.emit('state', game.state);
+  });
+
+  socket.on('disconnect', () => {
+    game.leaveSeat(socket.id);
     io.emit('state', game.state);
   });
 });

@@ -54,7 +54,7 @@ export class Game {
   joinSeat(playerId: string, name: string): number {
     const idx = this.state.seats.findIndex(s => s === null);
     if (idx === -1) throw new Error('Table full');
-    this.state.seats[idx] = { id: playerId, name, bet: 0, hand: [], done: false };
+    this.state.seats[idx] = { id: playerId, name, bet: null, hand: [], done: false };
     return idx;
   }
 
@@ -66,18 +66,29 @@ export class Game {
 
   startPlay() {
     if (this.state.phase !== 'bet') return;
-    // require all bets >0
-    for (const s of this.state.seats) if (s && s.bet === 0) return;
-    // deal two cards to each player
+    // ensure all players have responded (bet or skip)
+    for (const s of this.state.seats) if (s && s.bet === null) return;
+    const active = this.state.seats.filter(s => s && s.bet! > 0);
+    if (active.length === 0) {
+      // everyone skipped
+      this.state.phase = 'settle';
+      return;
+    }
+    // deal two cards to each active player
     this.state.seats.forEach(s => {
       if (s) {
-        s.hand.push(this.dealCard(), this.dealCard());
+        if (s.bet! > 0) {
+          s.hand.push(this.dealCard(), this.dealCard());
+          s.done = false;
+        } else {
+          s.done = true; // skipped this round
+        }
       }
     });
     // deal only one card to the dealer; remaining cards are drawn later
     this.state.dealer.push(this.dealCard());
     this.state.phase = 'play';
-    this.state.currentSeat = this.state.seats.findIndex(s => s !== null);
+    this.state.currentSeat = this.state.seats.findIndex(s => s !== null && !s.done);
   }
 
   hit(seatIdx: number) {
@@ -104,7 +115,6 @@ export class Game {
     } else {
       this.playDealer();
       this.settleBets();
-      this.resetRound();
     }
   }
 
@@ -128,17 +138,32 @@ export class Game {
   settleBets() {
     const dealerVal = this.handValue(this.state.dealer);
     this.state.seats.forEach(s => {
-      if (!s) return;
+      if (!s || s.bet === null || s.bet === 0) return;
       const hv = this.handValue(s.hand);
       if (hv <= 21 && (hv > dealerVal || dealerVal > 21)) {
         // win: pay 1:1
         s.bet *= 2;
-      } // else lose: bet lost
+      }
     });
     this.state.phase = 'settle';
   }
 
-  resetRound() {
-    setTimeout(() => { this.state = this.resetState(); }, 5000);
+  prepareNextRound() {
+    this.state.deck = this.makeShuffledDeck();
+    this.state.dealer = [];
+    this.state.currentSeat = null;
+    this.state.phase = 'bet';
+    this.state.seats.forEach(s => {
+      if (s) {
+        s.bet = null;
+        s.hand = [];
+        s.done = false;
+      }
+    });
+  }
+
+  leaveSeat(playerId: string) {
+    const idx = this.state.seats.findIndex(s => s && s.id === playerId);
+    if (idx !== -1) this.state.seats[idx] = null;
   }
 }
