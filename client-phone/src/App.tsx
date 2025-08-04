@@ -6,7 +6,7 @@ import HandView from './components/HandView';
 
 // shared types
 interface Card { suit: string; value: string; }
-interface Seat { bet: number; hand: Card[]; done: boolean; }
+interface Seat { bet: number | null; hand: Card[]; done: boolean; }
 interface GameState {
   seats: (Seat | null)[];
   dealer: Card[];
@@ -21,12 +21,16 @@ export default function App() {
 
   useEffect(() => {
     socket.on('joined', ({ seatIdx }) => setSeatIdx(seatIdx));
-    socket.on('state', (s: GameState) => setState(s));
+    const handleState = (s: GameState) => {
+      setState(s);
+      if (seatIdx !== null && !s.seats[seatIdx]) setSeatIdx(null);
+    };
+    socket.on('state', handleState);
     return () => {
       socket.off('joined');
-      socket.off('state');
+      socket.off('state', handleState);
     };
-  }, []);
+  }, [seatIdx]);
 
   const handleJoin = (playerName: string) => {
     setName(playerName);
@@ -35,6 +39,15 @@ export default function App() {
 
   const handleBet = (amount: number) => {
     if (seatIdx !== null) socket.emit('bet', { seatIdx, amount });
+  };
+
+  const handleSkip = () => {
+    if (seatIdx !== null) socket.emit('bet', { seatIdx, amount: 0 });
+  };
+
+  const handleQuit = () => {
+    socket.emit('quit');
+    setSeatIdx(null);
   };
 
   const handleHit = () => {
@@ -58,7 +71,12 @@ export default function App() {
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-4">Blackjack — Seat {seatIdx + 1}</h1>
       {state.phase === 'bet' && (
-        <BetControls onBet={handleBet} disabled={seat?.bet! > 0} />
+        <BetControls
+          onBet={handleBet}
+          onSkip={handleSkip}
+          onQuit={handleQuit}
+          disabled={seat?.bet !== null}
+        />
       )}
       {['play', 'settle'].includes(state.phase) && seat && (
         <HandView
