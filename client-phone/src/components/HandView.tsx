@@ -86,6 +86,9 @@ export default function HandView({
             </motion.div>
           ))}
         </div>
+        {phase === 'settle' && (
+          <div className="text-sm mt-2">Total: {calcTotal(dealer)}</div>
+        )}
       </div>
       <div className="flex space-x-4 mb-4">
         {hands.map((hand, idx) => (
