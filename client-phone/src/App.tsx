@@ -22,22 +22,57 @@ interface GameState {
 }
 
 export default function App() {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => localStorage.getItem('name') || '');
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [shouldRejoin, setShouldRejoin] = useState(false);
+  const [checkedStorage, setCheckedStorage] = useState(false);
   const [seatIdx, setSeatIdx] = useState<number | null>(null);
   const [state, setState] = useState<GameState | null>(null);
 
   useEffect(() => {
-    socket.on('joined', ({ seatIdx }) => setSeatIdx(seatIdx));
+    const storedId = localStorage.getItem('playerId');
+    if (storedId) {
+      if (window.confirm('Rejoin your previous game?')) {
+        setPlayerId(storedId);
+        setShouldRejoin(true);
+      } else {
+        localStorage.removeItem('playerId');
+        localStorage.removeItem('name');
+      }
+    }
+    setCheckedStorage(true);
+  }, []);
+
+  useEffect(() => {
+    const handleConnect = () => {
+      if (playerId && shouldRejoin) {
+        socket.emit('join', { playerId });
+      }
+    };
+
+    handleConnect();
+    socket.on('connect', handleConnect);
+
+    socket.on('joined', ({ seatIdx, playerId: pid }) => {
+      setSeatIdx(seatIdx);
+      setPlayerId(pid);
+      setShouldRejoin(true);
+      localStorage.setItem('playerId', pid);
+      if (name) localStorage.setItem('name', name);
+    });
+
     const handleState = (s: GameState) => {
       setState(s);
       if (seatIdx !== null && !s.seats[seatIdx]) setSeatIdx(null);
     };
     socket.on('state', handleState);
+
     return () => {
+      socket.off('connect', handleConnect);
       socket.off('joined');
       socket.off('state', handleState);
     };
-  }, [seatIdx]);
+  }, [playerId, shouldRejoin, seatIdx, name]);
 
   const handleJoin = (playerName: string, balance: number) => {
     setName(playerName);
@@ -55,6 +90,10 @@ export default function App() {
   const handleQuit = () => {
     socket.emit('quit');
     setSeatIdx(null);
+    setPlayerId(null);
+    setShouldRejoin(false);
+    localStorage.removeItem('playerId');
+    localStorage.removeItem('name');
   };
 
   const handleHit = () => {
@@ -73,8 +112,10 @@ export default function App() {
     if (seatIdx !== null) socket.emit('split', { seatIdx });
   };
 
+  if (!checkedStorage) return null;
   if (seatIdx === null) {
-    return <SeatSelector onJoin={handleJoin} />;
+    if (!playerId) return <SeatSelector onJoin={handleJoin} />;
+    return <div className="flex items-center justify-center h-full">Connecting...</div>;
   }
   if (!state) {
     return <div className="flex items-center justify-center h-full">Connecting...</div>;
