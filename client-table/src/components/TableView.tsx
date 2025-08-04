@@ -1,9 +1,8 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Card from './Card';
 
 interface CardType { suit: string; value: string; }
-interface SeatType { name: string; bet: number | null; balance: number; hand: CardType[]; done: boolean; }
+interface SeatType { name: string; bets: number[]; balance: number; hands: CardType[][]; activeHand: number; done: boolean; }
 interface Props { state: { seats: (SeatType|null)[]; dealer: CardType[]; currentSeat: number|null; phase: string; }; }
 
 export default function TableView({ state }: Props) {
@@ -14,10 +13,14 @@ export default function TableView({ state }: Props) {
           {s ? (
             <>
               <div className="font-semibold mb-2">{s.name} (${s.balance})</div>
-              <div>Bet: {s.bet ?? 0}</div>
-              <div className="flex mt-2 space-x-1">
-                {s.hand.map((c, j) => <Card key={j} card={c} />)}
-              </div>
+              {s.hands.map((hand, hIdx) => (
+                <div key={hIdx} className={`mb-2 flex flex-col items-center ${state.currentSeat === i && s.activeHand === hIdx ? 'border-2 border-yellow-300 p-1' : ''}`}>
+                  <div>Bet: {s.bets[hIdx] ?? 0}</div>
+                  <div className="flex mt-2 space-x-1">
+                    {hand.map((c, j) => <Card key={j} card={c} />)}
+                  </div>
+                </div>
+              ))}
             </>
           ) : (
             <div className="opacity-50">Empty</div>

@@ -57,8 +57,9 @@ export class Game {
     this.state.seats[idx] = {
       id: playerId,
       name,
-      bet: null,
-      hand: [],
+      bets: [],
+      hands: [],
+      activeHand: 0,
       done: false,
       balance,
     };
@@ -69,15 +70,17 @@ export class Game {
     const seat = this.state.seats[seatIdx];
     if (!seat || this.state.phase !== 'bet') throw new Error();
     if (amount > seat.balance) throw new Error('Insufficient balance');
-    seat.bet = amount;
+    seat.bets = [amount];
+    seat.hands = [[]];
+    seat.activeHand = 0;
     seat.balance -= amount;
   }
 
   startPlay() {
     if (this.state.phase !== 'bet') return;
     // ensure all players have responded (bet or skip)
-    for (const s of this.state.seats) if (s && s.bet === null) return;
-    const active = this.state.seats.filter(s => s && s.bet! > 0);
+    for (const s of this.state.seats) if (s && s.bets.length === 0) return;
+    const active = this.state.seats.filter(s => s && s.bets[0]! > 0);
     if (active.length === 0) {
       // everyone skipped
       this.state.phase = 'settle';
@@ -86,9 +89,10 @@ export class Game {
     // deal two cards to each active player
     this.state.seats.forEach(s => {
       if (s) {
-        if (s.bet! > 0) {
-          s.hand.push(this.dealCard(), this.dealCard());
+        if (s.bets[0]! > 0) {
+          s.hands[0].push(this.dealCard(), this.dealCard());
           s.done = false;
+          s.activeHand = 0;
         } else {
           s.done = true; // skipped this round
         }
@@ -103,31 +107,58 @@ export class Game {
   hit(seatIdx: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat || this.state.currentSeat !== seatIdx) throw new Error();
-    seat.hand.push(this.dealCard());
-    if (this.handValue(seat.hand) >= 21) {
-      seat.done = true;
-      this.nextTurn();
+    const hand = seat.hands[seat.activeHand];
+    hand.push(this.dealCard());
+    if (this.handValue(hand) >= 21) {
+      seat.activeHand++;
+      if (seat.activeHand >= seat.hands.length) {
+        seat.done = true;
+        this.nextTurn();
+      }
     }
   }
 
   double(seatIdx: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat || this.state.currentSeat !== seatIdx) throw new Error();
-    if (seat.bet === null) throw new Error();
-    const additional = seat.bet;
-    if (seat.balance < additional) throw new Error('Insufficient balance');
-    seat.balance -= additional;
-    seat.bet += additional;
-    seat.hand.push(this.dealCard());
-    seat.done = true;
-    this.nextTurn();
+    const bet = seat.bets[seat.activeHand];
+    if (seat.balance < bet) throw new Error('Insufficient balance');
+    seat.balance -= bet;
+    seat.bets[seat.activeHand] += bet;
+    const hand = seat.hands[seat.activeHand];
+    hand.push(this.dealCard());
+    seat.activeHand++;
+    if (seat.activeHand >= seat.hands.length) {
+      seat.done = true;
+      this.nextTurn();
+    }
+  }
+
+  split(seatIdx: number) {
+    const seat = this.state.seats[seatIdx];
+    if (!seat || this.state.currentSeat !== seatIdx) throw new Error();
+    const hand = seat.hands[seat.activeHand];
+    if (hand.length !== 2 || hand[0].value !== hand[1].value)
+      throw new Error('Cannot split');
+    const bet = seat.bets[seat.activeHand];
+    if (seat.balance < bet) throw new Error('Insufficient balance');
+    seat.balance -= bet;
+    const card2 = hand.pop()!;
+    seat.hands.splice(seat.activeHand + 1, 0, [card2]);
+    seat.bets.splice(seat.activeHand + 1, 0, bet);
+    // deal one card to each hand
+    seat.hands[seat.activeHand].push(this.dealCard());
+    seat.hands[seat.activeHand + 1].push(this.dealCard());
   }
 
   stand(seatIdx: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat || this.state.currentSeat !== seatIdx) throw new Error();
-    seat.done = true;
-    this.nextTurn();
+    seat.activeHand++;
+    if (seat.activeHand >= seat.hands.length) {
+      seat.done = true;
+      this.nextTurn();
+    }
   }
 
   nextTurn() {
@@ -160,18 +191,20 @@ export class Game {
   settleBets() {
     const dealerVal = this.handValue(this.state.dealer);
     this.state.seats.forEach(s => {
-      if (!s || s.bet === null || s.bet === 0) return;
-      const hv = this.handValue(s.hand);
-      const blackjack = hv === 21 && s.hand.length === 2;
-      if (hv > 21) {
-        return; // player bust
-      }
-      if (dealerVal > 21 || hv > dealerVal) {
-        const payout = blackjack ? s.bet * 2.5 : s.bet * 2;
-        s.balance += payout;
-      } else if (hv === dealerVal) {
-        s.balance += s.bet; // push
-      }
+      if (!s) return;
+      s.hands.forEach((hand, idx) => {
+        const bet = s.bets[idx];
+        if (!bet) return;
+        const hv = this.handValue(hand);
+        const blackjack = hv === 21 && hand.length === 2;
+        if (hv > 21) return; // player bust
+        if (dealerVal > 21 || hv > dealerVal) {
+          const payout = blackjack ? bet * 2.5 : bet * 2;
+          s.balance += payout;
+        } else if (hv === dealerVal) {
+          s.balance += bet; // push
+        }
+      });
     });
     this.state.phase = 'settle';
   }
@@ -183,8 +216,9 @@ export class Game {
     this.state.phase = 'bet';
     this.state.seats.forEach(s => {
       if (s) {
-        s.bet = null; // keep balance for next round
-        s.hand = [];
+        s.bets = [];
+        s.hands = [];
+        s.activeHand = 0;
         s.done = false;
       }
     });

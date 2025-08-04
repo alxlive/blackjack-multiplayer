@@ -2,8 +2,9 @@ export type Card = { suit: '♠' | '♥' | '♦' | '♣'; value: string; weight:
 export type Seat = {
   id: string;
   name: string;
-  bet: number | null;
-  hand: Card[];
+  bets: number[];
+  hands: Card[][];
+  activeHand: number;
   done: boolean;
   balance: number;
 };
