@@ -13,6 +13,7 @@ interface Seat {
   done: boolean;
   balance: number;
   nextBet: number | null;
+  connected: boolean;
 }
 interface GameState {
   seats: (Seat | null)[];
@@ -125,7 +126,12 @@ export default function App() {
 
   return (
     <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-2">Blackjack — Seat {seatIdx + 1}</h1>
+      <h1 className="text-2xl font-bold mb-2">
+        Blackjack — Seat {seatIdx + 1}
+        {seat && !seat.connected && (
+          <span className="text-red-500 text-sm ml-2">(Disconnected)</span>
+        )}
+      </h1>
       <p className="mb-4">Bankroll: ${seat?.balance ?? 0}</p>
       {['bet', 'settle'].includes(state.phase) && (
         <BetControls
@@ -133,23 +139,28 @@ export default function App() {
           onBet={handleBet}
           onSkip={handleSkip}
           onQuit={handleQuit}
-          disabled={state.phase === 'bet' ? !!seat?.bets.length : seat?.nextBet != null}
+          disabled={
+            !seat?.connected ||
+            (state.phase === 'bet' ? !!seat?.bets.length : seat?.nextBet != null)
+          }
         />
       )}
       {['play', 'settle'].includes(state.phase) && seat && (
-        <HandView
-          hands={seat.hands}
-          bets={seat.bets}
-          activeHand={seat.activeHand}
-          balance={seat.balance}
-          onHit={handleHit}
-          onStand={handleStand}
-          onDouble={handleDouble}
-          onSplit={handleSplit}
-          isTurn={state.currentSeat === seatIdx}
-          phase={state.phase}
-          dealer={state.dealer}
-        />
+        <div className={seat.connected ? '' : 'opacity-50 pointer-events-none'}>
+          <HandView
+            hands={seat.hands}
+            bets={seat.bets}
+            activeHand={seat.activeHand}
+            balance={seat.balance}
+            onHit={handleHit}
+            onStand={handleStand}
+            onDouble={handleDouble}
+            onSplit={handleSplit}
+            isTurn={state.currentSeat === seatIdx && seat.connected}
+            phase={state.phase}
+            dealer={state.dealer}
+          />
+        </div>
       )}
     </div>
   );

@@ -2,7 +2,7 @@ export type Card = { suit: '♠' | '♥' | '♦' | '♣'; value: string; weight:
 export type Seat = {
   playerId: string;
   socketId: string;
-  connected: boolean;
+  connected: boolean; // whether player's socket is currently connected
   name: string;
   bets: number[];
   hands: Card[][];
