@@ -50,11 +50,35 @@ export class Game {
 
   dealCard(): Card { return this.state.deck.shift()!; }
 
-  joinSeat(playerId: string, name: string, balance: number): number {
+  joinSeat(
+    socketId: string,
+    name?: string,
+    balance?: number,
+    playerId?: string,
+  ): { seatIdx: number; playerId: string } {
+    if (playerId) {
+      const existing = this.state.seats.findIndex(
+        s => s && s.playerId === playerId,
+      );
+      if (existing !== -1) {
+        const seat = this.state.seats[existing]!;
+        seat.socketId = socketId;
+        seat.connected = true;
+        return { seatIdx: existing, playerId };
+      }
+    }
+
+    if (name === undefined || balance === undefined)
+      throw new Error('Name and balance required');
+
     const idx = this.state.seats.findIndex(s => s === null);
     if (idx === -1) throw new Error('Table full');
+
+    const newId = playerId ?? Math.random().toString(36).slice(2);
     this.state.seats[idx] = {
-      id: playerId,
+      playerId: newId,
+      socketId,
+      connected: true,
       name,
       bets: [],
       hands: [],
@@ -63,7 +87,30 @@ export class Game {
       balance,
       nextBet: null,
     };
-    return idx;
+    return { seatIdx: idx, playerId: newId };
+  }
+
+  markDisconnected(socketId: string) {
+    const idx = this.state.seats.findIndex(
+      s => s && s.socketId === socketId,
+    );
+    if (idx === -1) return;
+    const seat = this.state.seats[idx]!;
+    seat.connected = false;
+    if (this.state.phase === 'bet') {
+      if (seat.bets.length === 0) {
+        seat.bets = [0];
+        seat.hands = [[]];
+        seat.activeHand = 0;
+        seat.done = true;
+      }
+    } else if (this.state.phase === 'play') {
+      if (!seat.done) {
+        seat.activeHand = seat.hands.length;
+        seat.done = true;
+        if (this.state.currentSeat === idx) this.nextTurn();
+      }
+    }
   }
 
   placeBet(seatIdx: number, amount: number) {
@@ -239,8 +286,10 @@ export class Game {
     });
   }
 
-  leaveSeat(playerId: string) {
-    const idx = this.state.seats.findIndex(s => s && s.id === playerId);
+  leaveSeat(socketId: string) {
+    const idx = this.state.seats.findIndex(
+      s => s && s.socketId === socketId,
+    );
     if (idx !== -1) {
       const seat = this.state.seats[idx]!;
       if (seat.nextBet) seat.balance += seat.nextBet;
