@@ -12,6 +12,7 @@ interface Seat {
   activeHand: number;
   done: boolean;
   balance: number;
+  nextBet: number | null;
 }
 interface GameState {
   seats: (Seat | null)[];
@@ -85,13 +86,13 @@ export default function App() {
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-2">Blackjack — Seat {seatIdx + 1}</h1>
       <p className="mb-4">Bankroll: ${seat?.balance ?? 0}</p>
-      {state.phase === 'bet' && (
+      {['bet', 'settle'].includes(state.phase) && (
         <BetControls
           balance={seat?.balance ?? 0}
           onBet={handleBet}
           onSkip={handleSkip}
           onQuit={handleQuit}
-          disabled={!!seat?.bets.length}
+          disabled={state.phase === 'bet' ? !!seat?.bets.length : seat?.nextBet != null}
         />
       )}
       {['play', 'settle'].includes(state.phase) && seat && (
