@@ -29,12 +29,19 @@ export default function HandView({
   phase,
   dealer,
 }: Props) {
-  const calcTotal = (hand: Card[]) =>
-    hand.reduce(
+  const handValue = (hand: Card[]) => {
+    let total = hand.reduce(
       (sum, c) =>
         sum + (['J', 'Q', 'K'].includes(c.value) ? 10 : c.value === 'A' ? 11 : +c.value),
       0
     );
+    let aces = hand.filter(c => c.value === 'A').length;
+    while (total > 21 && aces > 0) {
+      total -= 10;
+      aces--;
+    }
+    return total;
+  };
   const currentHand = hands[activeHand] || [];
   const canSplit =
     isTurn &&
@@ -45,6 +52,21 @@ export default function HandView({
     isTurn &&
     currentHand.length === 2 &&
     balance >= (bets[activeHand] || 0);
+
+  const dealerTotal = handValue(dealer);
+  const results = hands
+    .map((hand, idx) => {
+      const bet = bets[idx];
+      if (!bet) return null;
+      const total = handValue(hand);
+      let text: string;
+      if (total > 21) text = 'The dealer wins';
+      else if (dealerTotal > 21 || total > dealerTotal) text = 'You win';
+      else if (total < dealerTotal) text = 'The dealer wins';
+      else text = 'Push';
+      return { idx, text };
+    })
+    .filter((r): r is { idx: number; text: string } => r !== null);
 
   return (
     <div className="flex flex-col items-center">
@@ -88,7 +110,7 @@ export default function HandView({
               ))}
             </div>
             <div className="text-sm">Bet: {bets[idx] ?? 0}</div>
-            <div className="text-sm">Total: {calcTotal(hand)}</div>
+            <div className="text-sm">Total: {handValue(hand)}</div>
           </div>
         ))}
       </div>
@@ -124,7 +146,15 @@ export default function HandView({
           </button>
         </div>
       )}
-      {phase === 'settle' && <div className="text-lg font-semibold">Round Over</div>}
+      {phase === 'settle' && (
+        <div className="text-lg font-semibold">
+          {results.length === 1
+            ? results[0].text
+            : results.map(r => (
+                <div key={r.idx}>Hand {r.idx + 1}: {r.text}</div>
+              ))}
+        </div>
+      )}
     </div>
   );
 }
