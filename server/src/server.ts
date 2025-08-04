@@ -49,6 +49,12 @@ io.on('connection', socket => {
     if (game.state.phase === 'settle') scheduleNextRound();
   });
 
+  socket.on('split', ({ seatIdx }) => {
+    game.split(seatIdx);
+    io.emit('state', game.state);
+    if (game.state.phase === 'settle') scheduleNextRound();
+  });
+
   socket.on('quit', () => {
     game.leaveSeat(socket.id);
     io.emit('state', game.state);

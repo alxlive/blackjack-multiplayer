@@ -7,8 +7,9 @@ import HandView from './components/HandView';
 // shared types
 interface Card { suit: string; value: string; }
 interface Seat {
-  bet: number | null;
-  hand: Card[];
+  bets: number[];
+  hands: Card[][];
+  activeHand: number;
   done: boolean;
   balance: number;
 }
@@ -67,6 +68,10 @@ export default function App() {
     if (seatIdx !== null) socket.emit('double', { seatIdx });
   };
 
+  const handleSplit = () => {
+    if (seatIdx !== null) socket.emit('split', { seatIdx });
+  };
+
   if (seatIdx === null) {
     return <SeatSelector onJoin={handleJoin} />;
   }
@@ -86,15 +91,19 @@ export default function App() {
           onBet={handleBet}
           onSkip={handleSkip}
           onQuit={handleQuit}
-          disabled={seat?.bet !== null}
+          disabled={!!seat?.bets.length}
         />
       )}
       {['play', 'settle'].includes(state.phase) && seat && (
         <HandView
-          hand={seat.hand}
+          hands={seat.hands}
+          bets={seat.bets}
+          activeHand={seat.activeHand}
+          balance={seat.balance}
           onHit={handleHit}
           onStand={handleStand}
           onDouble={handleDouble}
+          onSplit={handleSplit}
           isTurn={state.currentSeat === seatIdx}
           phase={state.phase}
         />
