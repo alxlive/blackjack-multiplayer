@@ -1,5 +1,12 @@
 export type Card = { suit: '♠' | '♥' | '♦' | '♣'; value: string; weight: number };
-export type Seat = { id: string; name: string; bet: number | null; hand: Card[]; done: boolean };
+export type Seat = {
+  id: string;
+  name: string;
+  bet: number | null;
+  hand: Card[];
+  done: boolean;
+  balance: number;
+};
 export type GameState = {
   deck: Card[];
   seats: (Seat | null)[]; // 7 seats

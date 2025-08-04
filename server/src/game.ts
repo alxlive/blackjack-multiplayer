@@ -51,17 +51,26 @@ export class Game {
 
   dealCard(): Card { return this.state.deck.shift()!; }
 
-  joinSeat(playerId: string, name: string): number {
+  joinSeat(playerId: string, name: string, balance: number): number {
     const idx = this.state.seats.findIndex(s => s === null);
     if (idx === -1) throw new Error('Table full');
-    this.state.seats[idx] = { id: playerId, name, bet: null, hand: [], done: false };
+    this.state.seats[idx] = {
+      id: playerId,
+      name,
+      bet: null,
+      hand: [],
+      done: false,
+      balance,
+    };
     return idx;
   }
 
   placeBet(seatIdx: number, amount: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat || this.state.phase !== 'bet') throw new Error();
+    if (amount > seat.balance) throw new Error('Insufficient balance');
     seat.bet = amount;
+    seat.balance -= amount;
   }
 
   startPlay() {
@@ -140,9 +149,15 @@ export class Game {
     this.state.seats.forEach(s => {
       if (!s || s.bet === null || s.bet === 0) return;
       const hv = this.handValue(s.hand);
-      if (hv <= 21 && (hv > dealerVal || dealerVal > 21)) {
-        // win: pay 1:1
-        s.bet *= 2;
+      const blackjack = hv === 21 && s.hand.length === 2;
+      if (hv > 21) {
+        return; // player bust
+      }
+      if (dealerVal > 21 || hv > dealerVal) {
+        const payout = blackjack ? s.bet * 2.5 : s.bet * 2;
+        s.balance += payout;
+      } else if (hv === dealerVal) {
+        s.balance += s.bet; // push
       }
     });
     this.state.phase = 'settle';
@@ -155,7 +170,7 @@ export class Game {
     this.state.phase = 'bet';
     this.state.seats.forEach(s => {
       if (s) {
-        s.bet = null;
+        s.bet = null; // keep balance for next round
         s.hand = [];
         s.done = false;
       }
