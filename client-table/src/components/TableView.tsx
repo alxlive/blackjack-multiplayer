@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Card from './Card';
 
 interface CardType { suit: string; value: string; }
-interface SeatType { name: string; bet: number | null; hand: CardType[]; done: boolean; }
+interface SeatType { name: string; bet: number | null; balance: number; hand: CardType[]; done: boolean; }
 interface Props { state: { seats: (SeatType|null)[]; dealer: CardType[]; currentSeat: number|null; phase: string; }; }
 
 export default function TableView({ state }: Props) {
@@ -13,7 +13,7 @@ export default function TableView({ state }: Props) {
         <div key={i} className="bg-white bg-opacity-20 rounded-lg p-4 flex flex-col items-center">
           {s ? (
             <>
-              <div className="font-semibold mb-2">{s.name}</div>
+              <div className="font-semibold mb-2">{s.name} (${s.balance})</div>
               <div>Bet: {s.bet ?? 0}</div>
               <div className="flex mt-2 space-x-1">
                 {s.hand.map((c, j) => <Card key={j} card={c} />)}
