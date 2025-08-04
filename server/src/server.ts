@@ -9,11 +9,13 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 const game = new Game();
 
-function scheduleNextRound() {
-  setTimeout(() => {
+function maybeStartNextRound() {
+  if (game.state.phase === 'settle' && game.allBetsQueued()) {
     game.prepareNextRound();
     io.emit('state', game.state);
-  }, 5000);
+    game.startPlay();
+    io.emit('state', game.state);
+  }
 }
 
 io.on('connection', socket => {
@@ -26,43 +28,47 @@ io.on('connection', socket => {
   socket.on('bet', ({ seatIdx, amount }) => {
     game.placeBet(seatIdx, amount);
     io.emit('state', game.state);
-    game.startPlay();
-    io.emit('state', game.state);
-    if (game.state.phase === 'settle') scheduleNextRound();
+    if (game.state.phase === 'bet') {
+      game.startPlay();
+      io.emit('state', game.state);
+    }
+    maybeStartNextRound();
   });
 
   socket.on('hit', ({ seatIdx }) => {
     game.hit(seatIdx);
     io.emit('state', game.state);
-    if (game.state.phase === 'settle') scheduleNextRound();
+    maybeStartNextRound();
   });
 
   socket.on('stand', ({ seatIdx }) => {
     game.stand(seatIdx);
     io.emit('state', game.state);
-    if (game.state.phase === 'settle') scheduleNextRound();
+    maybeStartNextRound();
   });
 
   socket.on('double', ({ seatIdx }) => {
     game.double(seatIdx);
     io.emit('state', game.state);
-    if (game.state.phase === 'settle') scheduleNextRound();
+    maybeStartNextRound();
   });
 
   socket.on('split', ({ seatIdx }) => {
     game.split(seatIdx);
     io.emit('state', game.state);
-    if (game.state.phase === 'settle') scheduleNextRound();
+    maybeStartNextRound();
   });
 
   socket.on('quit', () => {
     game.leaveSeat(socket.id);
     io.emit('state', game.state);
+    maybeStartNextRound();
   });
 
   socket.on('disconnect', () => {
     game.leaveSeat(socket.id);
     io.emit('state', game.state);
+    maybeStartNextRound();
   });
 });
 

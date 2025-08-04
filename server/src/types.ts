@@ -7,6 +7,8 @@ export type Seat = {
   activeHand: number;
   done: boolean;
   balance: number;
+  // wager queued for upcoming round; null until player responds
+  nextBet: number | null;
 };
 export type GameState = {
   deck: Card[];

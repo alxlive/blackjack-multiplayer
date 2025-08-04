@@ -1,5 +1,4 @@
 import { Card, GameState, Seat } from './types';
-import { randomFillSync } from 'crypto';
 
 export class Game {
   state: GameState;
@@ -62,18 +61,31 @@ export class Game {
       activeHand: 0,
       done: false,
       balance,
+      nextBet: null,
     };
     return idx;
   }
 
   placeBet(seatIdx: number, amount: number) {
     const seat = this.state.seats[seatIdx];
-    if (!seat || this.state.phase !== 'bet') throw new Error();
+    if (!seat) throw new Error();
     if (amount > seat.balance) throw new Error('Insufficient balance');
-    seat.bets = [amount];
-    seat.hands = [[]];
-    seat.activeHand = 0;
-    seat.balance -= amount;
+    if (this.state.phase === 'bet') {
+      seat.bets = [amount];
+      seat.hands = [[]];
+      seat.activeHand = 0;
+      seat.balance -= amount;
+    } else if (this.state.phase === 'settle') {
+      if (seat.nextBet !== null) throw new Error('Bet already queued');
+      seat.nextBet = amount;
+      seat.balance -= amount;
+    } else {
+      throw new Error();
+    }
+  }
+
+  allBetsQueued(): boolean {
+    return this.state.seats.every(s => s === null || s.nextBet !== null);
   }
 
   startPlay() {
@@ -216,16 +228,22 @@ export class Game {
     this.state.phase = 'bet';
     this.state.seats.forEach(s => {
       if (s) {
-        s.bets = [];
-        s.hands = [];
+        const bet = s.nextBet ?? 0;
+        s.bets = [bet];
+        s.hands = [[]];
         s.activeHand = 0;
         s.done = false;
+        s.nextBet = null;
       }
     });
   }
 
   leaveSeat(playerId: string) {
     const idx = this.state.seats.findIndex(s => s && s.id === playerId);
-    if (idx !== -1) this.state.seats[idx] = null;
+    if (idx !== -1) {
+      const seat = this.state.seats[idx]!;
+      if (seat.nextBet) seat.balance += seat.nextBet;
+      this.state.seats[idx] = null;
+    }
   }
 }
