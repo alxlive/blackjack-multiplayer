@@ -98,18 +98,25 @@ export class Game {
     const seat = this.state.seats[idx]!;
     seat.connected = false;
     if (this.state.phase === 'bet') {
-      if (seat.bets.length === 0) {
-        seat.bets = [0];
-        seat.hands = [[]];
-        seat.activeHand = 0;
-        seat.done = true;
+      // auto place a zero bet so the round can proceed
+      if (seat.bets.length > 0 && seat.bets[0] > 0) {
+        // refund any existing bet
+        seat.balance += seat.bets[0];
       }
+      seat.bets = [0];
+      seat.hands = [[]];
+      seat.activeHand = 0;
+      seat.done = true;
     } else if (this.state.phase === 'play') {
       if (!seat.done) {
+        // stand on all remaining hands
         seat.activeHand = seat.hands.length;
         seat.done = true;
         if (this.state.currentSeat === idx) this.nextTurn();
       }
+    } else if (this.state.phase === 'settle') {
+      // queue a skip bet for the upcoming round
+      if (seat.nextBet === null) seat.nextBet = 0;
     }
   }
 

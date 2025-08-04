@@ -72,8 +72,8 @@ io.on('connection', socket => {
 
   socket.on('disconnect', () => {
     game.markDisconnected(socket.id);
-    io.emit('state', game.state);
     maybeStartNextRound();
+    io.emit('state', game.state);
   });
 });
 
