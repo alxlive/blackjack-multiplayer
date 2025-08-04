@@ -68,13 +68,14 @@ export class Game {
     if (this.state.phase !== 'bet') return;
     // require all bets >0
     for (const s of this.state.seats) if (s && s.bet === 0) return;
-    // deal two cards each
+    // deal two cards to each player
     this.state.seats.forEach(s => {
       if (s) {
         s.hand.push(this.dealCard(), this.dealCard());
       }
     });
-    this.state.dealer.push(this.dealCard(), this.dealCard());
+    // deal only one card to the dealer; remaining cards are drawn later
+    this.state.dealer.push(this.dealCard());
     this.state.phase = 'play';
     this.state.currentSeat = this.state.seats.findIndex(s => s !== null);
   }
