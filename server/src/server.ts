@@ -20,13 +20,8 @@ function maybeStartNextRound() {
 
 io.on('connection', socket => {
   socket.on('join', ({ name, balance, playerId }) => {
-    const { seatIdx, playerId: pid } = game.joinSeat(
-      socket.id,
-      name,
-      balance,
-      playerId,
-    );
-    socket.emit('joined', { seatIdx, playerId: pid });
+    const joinResult = game.joinSeat(socket.id, name, balance, playerId);
+    socket.emit('joined', joinResult);
     io.emit('state', game.state as GameState);
   });
 

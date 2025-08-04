@@ -53,11 +53,11 @@ export default function App() {
     handleConnect();
     socket.on('connect', handleConnect);
 
-    socket.on('joined', ({ seatIdx, playerId: pid }) => {
+    socket.on('joined', ({ seatIdx, playerId }) => {
       setSeatIdx(seatIdx);
-      setPlayerId(pid);
+      setPlayerId(playerId);
       setShouldRejoin(true);
-      localStorage.setItem('playerId', pid);
+      localStorage.setItem('playerId', playerId);
       if (name) localStorage.setItem('name', name);
     });
 
