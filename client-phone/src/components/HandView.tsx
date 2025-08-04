@@ -41,6 +41,10 @@ export default function HandView({
     currentHand.length === 2 &&
     currentHand[0].value === currentHand[1].value &&
     balance >= (bets[activeHand] || 0);
+  const canDouble =
+    isTurn &&
+    currentHand.length === 2 &&
+    balance >= (bets[activeHand] || 0);
 
   return (
     <div className="flex flex-col items-center">
@@ -107,7 +111,7 @@ export default function HandView({
           <button
             className="bg-blue-500 px-4 py-2 rounded disabled:opacity-50"
             onClick={onDouble}
-            disabled={!isTurn}
+            disabled={!canDouble}
           >
             Double
           </button>

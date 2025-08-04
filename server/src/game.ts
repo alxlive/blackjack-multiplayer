@@ -133,11 +133,12 @@ export class Game {
   double(seatIdx: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat || this.state.currentSeat !== seatIdx) throw new Error();
+    const hand = seat.hands[seat.activeHand];
+    if (hand.length !== 2) throw new Error('Cannot double after hitting');
     const bet = seat.bets[seat.activeHand];
     if (seat.balance < bet) throw new Error('Insufficient balance');
     seat.balance -= bet;
     seat.bets[seat.activeHand] += bet;
-    const hand = seat.hands[seat.activeHand];
     hand.push(this.dealCard());
     seat.activeHand++;
     if (seat.activeHand >= seat.hands.length) {
