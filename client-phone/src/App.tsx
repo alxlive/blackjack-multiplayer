@@ -6,7 +6,12 @@ import HandView from './components/HandView';
 
 // shared types
 interface Card { suit: string; value: string; }
-interface Seat { bet: number | null; hand: Card[]; done: boolean; }
+interface Seat {
+  bet: number | null;
+  hand: Card[];
+  done: boolean;
+  balance: number;
+}
 interface GameState {
   seats: (Seat | null)[];
   dealer: Card[];
@@ -32,9 +37,9 @@ export default function App() {
     };
   }, [seatIdx]);
 
-  const handleJoin = (playerName: string) => {
+  const handleJoin = (playerName: string, balance: number) => {
     setName(playerName);
-    socket.emit('join', { name: playerName });
+    socket.emit('join', { name: playerName, balance });
   };
 
   const handleBet = (amount: number) => {
@@ -69,9 +74,11 @@ export default function App() {
 
   return (
     <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Blackjack — Seat {seatIdx + 1}</h1>
+      <h1 className="text-2xl font-bold mb-2">Blackjack — Seat {seatIdx + 1}</h1>
+      <p className="mb-4">Bankroll: ${seat?.balance ?? 0}</p>
       {state.phase === 'bet' && (
         <BetControls
+          balance={seat?.balance ?? 0}
           onBet={handleBet}
           onSkip={handleSkip}
           onQuit={handleQuit}
