@@ -3,7 +3,15 @@ import { socket } from './socket';
 import TableView from './components/TableView';
 
 interface Card { suit: string; value: string; }
-interface Seat { name: string; bets: number[]; balance: number; hands: Card[][]; activeHand: number; done: boolean; }
+interface Seat {
+  name: string;
+  bets: number[];
+  balance: number;
+  hands: Card[][];
+  activeHand: number;
+  done: boolean;
+  connected: boolean;
+}
 interface GameState {
   seats: (Seat | null)[];
   dealer: Card[];
