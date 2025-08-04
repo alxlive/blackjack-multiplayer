@@ -106,6 +106,7 @@ export default function App() {
           onSplit={handleSplit}
           isTurn={state.currentSeat === seatIdx}
           phase={state.phase}
+          dealer={state.dealer}
         />
       )}
     </div>
