@@ -1,6 +1,8 @@
 export type Card = { suit: '♠' | '♥' | '♦' | '♣'; value: string; weight: number };
 export type Seat = {
-  id: string;
+  playerId: string;
+  socketId: string;
+  connected: boolean;
   name: string;
   bets: number[];
   hands: Card[][];

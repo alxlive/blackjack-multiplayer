@@ -19,9 +19,14 @@ function maybeStartNextRound() {
 }
 
 io.on('connection', socket => {
-  socket.on('join', ({ name, balance }) => {
-    const seatIdx = game.joinSeat(socket.id, name, balance);
-    socket.emit('joined', { seatIdx });
+  socket.on('join', ({ name, balance, playerId }) => {
+    const { seatIdx, playerId: pid } = game.joinSeat(
+      socket.id,
+      name,
+      balance,
+      playerId,
+    );
+    socket.emit('joined', { seatIdx, playerId: pid });
     io.emit('state', game.state as GameState);
   });
 
@@ -66,7 +71,7 @@ io.on('connection', socket => {
   });
 
   socket.on('disconnect', () => {
-    game.leaveSeat(socket.id);
+    game.markDisconnected(socket.id);
     io.emit('state', game.state);
     maybeStartNextRound();
   });
