@@ -20,9 +20,14 @@ function maybeStartNextRound() {
 
 io.on('connection', socket => {
   socket.on('join', ({ name, balance, playerId }) => {
-    const joinResult = game.joinSeat(socket.id, name, balance, playerId);
-    socket.emit('joined', joinResult);
-    io.emit('state', game.state as GameState);
+    try {
+      const joinResult = game.joinSeat(socket.id, name, balance, playerId);
+      socket.emit('joined', joinResult);
+      io.emit('state', game.state as GameState);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Join failed';
+      socket.emit('joinError', message);
+    }
   });
 
   socket.on('bet', ({ seatIdx, amount }) => {

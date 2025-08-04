@@ -62,6 +62,16 @@ export default function App() {
       if (name) localStorage.setItem('name', name);
     });
 
+    const handleJoinError = (message: string) => {
+      alert(`Join failed: ${message}. Please enter your name and balance again.`);
+      setPlayerId(null);
+      setShouldRejoin(false);
+      setSeatIdx(null);
+      localStorage.removeItem('playerId');
+      localStorage.removeItem('name');
+    };
+    socket.on('joinError', handleJoinError);
+
     const handleState = (s: GameState) => {
       setState(s);
       if (seatIdx !== null && !s.seats[seatIdx]) setSeatIdx(null);
@@ -71,6 +81,7 @@ export default function App() {
     return () => {
       socket.off('connect', handleConnect);
       socket.off('joined');
+       socket.off('joinError', handleJoinError);
       socket.off('state', handleState);
     };
   }, [playerId, shouldRejoin, seatIdx, name]);
