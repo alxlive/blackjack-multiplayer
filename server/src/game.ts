@@ -110,6 +110,19 @@ export class Game {
     }
   }
 
+  double(seatIdx: number) {
+    const seat = this.state.seats[seatIdx];
+    if (!seat || this.state.currentSeat !== seatIdx) throw new Error();
+    if (seat.bet === null) throw new Error();
+    const additional = seat.bet;
+    if (seat.balance < additional) throw new Error('Insufficient balance');
+    seat.balance -= additional;
+    seat.bet += additional;
+    seat.hand.push(this.dealCard());
+    seat.done = true;
+    this.nextTurn();
+  }
+
   stand(seatIdx: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat || this.state.currentSeat !== seatIdx) throw new Error();
