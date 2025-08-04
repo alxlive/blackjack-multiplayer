@@ -17,8 +17,8 @@ function scheduleNextRound() {
 }
 
 io.on('connection', socket => {
-  socket.on('join', ({ name }) => {
-    const seatIdx = game.joinSeat(socket.id, name);
+  socket.on('join', ({ name, balance }) => {
+    const seatIdx = game.joinSeat(socket.id, name, balance);
     socket.emit('joined', { seatIdx });
     io.emit('state', game.state as GameState);
   });
