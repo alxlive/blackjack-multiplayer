@@ -310,7 +310,10 @@ export class Game {
     );
     if (idx !== -1) {
       const seat = this.state.seats[idx]!;
-      if (seat.nextBet) seat.balance += seat.nextBet;
+      if (this.state.phase === 'bet' && seat.bets[0] > 0) {
+        seat.balance += seat.bets[0];
+      }
+      if (seat.nextBet !== null) seat.balance += seat.nextBet;
       this.state.seats[idx] = null;
     }
   }
