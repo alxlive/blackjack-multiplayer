@@ -44,7 +44,7 @@ export default function HandView({
   };
   const currentHand = hands[activeHand] || [];
   const hasBlackjack =
-    currentHand.length === 2 && calcTotal(currentHand) === 21;
+    currentHand.length === 2 && handValue(currentHand) === 21;
   const canSplit =
     isTurn &&
     currentHand.length === 2 &&
@@ -95,7 +95,7 @@ export default function HandView({
           ))}
         </div>
         {phase === 'settle' && (
-          <div className="text-sm mt-2">Total: {calcTotal(dealer)}</div>
+          <div className="text-sm mt-2">Total: {handValue(dealer)}</div>
         )}
       </div>
       <div className="flex space-x-4 mb-4">
