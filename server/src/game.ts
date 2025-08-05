@@ -123,8 +123,17 @@ export class Game {
   placeBet(seatIdx: number, amount: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat) throw new Error();
-    if (amount > seat.balance) throw new Error('Insufficient balance');
+
+    // available balance includes any existing bet when adjusting during betting phase
+    let available = seat.balance;
+    if (this.state.phase === 'bet' && seat.bets.length > 0) {
+      available += seat.bets[0]!;
+    }
+    if (amount > available) throw new Error('Insufficient balance');
+
     if (this.state.phase === 'bet') {
+      // refund previous wager before placing a new one
+      if (seat.bets.length > 0) seat.balance += seat.bets[0]!;
       seat.bets = [amount];
       seat.hands = [[]];
       seat.activeHand = 0;
