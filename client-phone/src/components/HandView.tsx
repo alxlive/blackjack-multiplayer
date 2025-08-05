@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface Card { suit: string; value: string; }
@@ -43,6 +43,8 @@ export default function HandView({
     return total;
   };
   const currentHand = hands[activeHand] || [];
+  const hasBlackjack =
+    currentHand.length === 2 && calcTotal(currentHand) === 21;
   const canSplit =
     isTurn &&
     currentHand.length === 2 &&
@@ -52,6 +54,12 @@ export default function HandView({
     isTurn &&
     currentHand.length === 2 &&
     balance >= (bets[activeHand] || 0);
+
+  useEffect(() => {
+    if (isTurn && hasBlackjack) {
+      onStand();
+    }
+  }, [isTurn, hasBlackjack, onStand]);
 
   const dealerTotal = handValue(dealer);
   const results = hands
@@ -122,7 +130,7 @@ export default function HandView({
           <button
             className="bg-yellow-500 px-4 py-2 rounded disabled:opacity-50"
             onClick={onHit}
-            disabled={!isTurn}
+            disabled={!isTurn || hasBlackjack}
           >
             Hit
           </button>
@@ -136,14 +144,14 @@ export default function HandView({
           <button
             className="bg-blue-500 px-4 py-2 rounded disabled:opacity-50"
             onClick={onDouble}
-            disabled={!canDouble}
+            disabled={!canDouble || hasBlackjack}
           >
             Double
           </button>
           <button
             className="bg-red-500 px-4 py-2 rounded disabled:opacity-50"
             onClick={onStand}
-            disabled={!isTurn}
+            disabled={!isTurn || hasBlackjack}
           >
             Stand
           </button>
