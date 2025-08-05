@@ -9,6 +9,15 @@ describe('buyIn', () => {
     expect(game.state.seats[seatIdx]!.balance).toBe(150);
   });
 
+  it('allows players with zero balance to buy back in', () => {
+    const game = new Game();
+    const { seatIdx } = game.joinSeat('s1', 'Alice', 100);
+    game.placeBet(seatIdx, 100); // drains balance to zero
+    expect(game.state.seats[seatIdx]!.balance).toBe(0);
+    game.buyIn(seatIdx, 25);
+    expect(game.state.seats[seatIdx]!.balance).toBe(25);
+  });
+
   it('rejects non-positive amounts', () => {
     const game = new Game();
     const { seatIdx } = game.joinSeat('s1', 'Alice', 100);
