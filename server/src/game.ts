@@ -157,8 +157,15 @@ export class Game {
       if (s) {
         if (s.bets[0]! > 0) {
           s.hands[0].push(this.dealCard(), this.dealCard());
-          s.done = false;
           s.activeHand = 0;
+          const hand = s.hands[0];
+          const hv = this.handValue(hand);
+          if (hv === 21 && hand.length === 2) {
+            s.done = true;
+            s.activeHand = s.hands.length;
+          } else {
+            s.done = false;
+          }
         } else {
           s.done = true; // skipped this round
         }
@@ -168,6 +175,10 @@ export class Game {
     this.state.dealer.push(this.dealCard());
     this.state.phase = 'play';
     this.state.currentSeat = this.state.seats.findIndex(s => s !== null && !s.done);
+    if (this.state.currentSeat === -1) {
+      this.playDealer();
+      this.settleBets();
+    }
   }
 
   hit(seatIdx: number) {
