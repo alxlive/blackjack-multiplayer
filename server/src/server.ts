@@ -72,6 +72,9 @@ io.on('connection', socket => {
 
   socket.on('disconnect', () => {
     game.markDisconnected(socket.id);
+    if (game.state.phase === 'bet') {
+      game.startPlay();
+    }
     maybeStartNextRound();
     io.emit('state', game.state);
   });
