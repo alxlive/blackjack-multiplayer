@@ -14,6 +14,7 @@ interface Seat {
   balance: number;
   nextBet: number | null;
   connected: boolean;
+  inactive: boolean;
 }
 interface GameState {
   seats: (Seat | null)[];
@@ -72,8 +73,25 @@ export default function App() {
     socket.on('joinError', handleJoinError);
 
     const handleState = (s: GameState) => {
-      setState(s);
-      if (seatIdx !== null && !s.seats[seatIdx]) setSeatIdx(null);
+      const newState: GameState = {
+        ...s,
+        seats: s.seats.map(seat => (seat ? { inactive: false, ...seat } : null)),
+      };
+      if (seatIdx !== null) {
+        const seat = newState.seats[seatIdx];
+        if (seat) {
+          const isInactive =
+            seat.balance === 0 &&
+            (newState.phase === 'bet'
+              ? seat.bets.length === 0
+              : newState.phase === 'settle'
+              ? seat.nextBet == null
+              : false);
+          seat.inactive = isInactive;
+        }
+        if (!newState.seats[seatIdx]) setSeatIdx(null);
+      }
+      setState(newState);
     };
     socket.on('state', handleState);
 
@@ -123,6 +141,10 @@ export default function App() {
     if (seatIdx !== null) socket.emit('split', { seatIdx });
   };
 
+  const handleBuyIn = (amount: number) => {
+    if (seatIdx !== null) socket.emit('buyIn', { seatIdx, amount });
+  };
+
   if (!checkedStorage) return null;
   if (seatIdx === null) {
     if (!playerId) return <SeatSelector onJoin={handleJoin} />;
@@ -149,7 +171,10 @@ export default function App() {
           onBet={handleBet}
           onSkip={handleSkip}
           onQuit={handleQuit}
+          onBuyIn={handleBuyIn}
+          inactive={seat?.inactive}
           disabled={
+            seat?.inactive ||
             !seat?.connected ||
             (state.phase === 'bet' ? !!seat?.bets.length : seat?.nextBet != null)
           }
