@@ -120,6 +120,13 @@ export class Game {
     }
   }
 
+  buyIn(seatIdx: number, amount: number) {
+    const seat = this.state.seats[seatIdx];
+    if (!seat) throw new Error('Invalid seat');
+    if (amount <= 0) throw new Error('Invalid amount');
+    seat.balance += amount;
+  }
+
   placeBet(seatIdx: number, amount: number) {
     const seat = this.state.seats[seatIdx];
     if (!seat) throw new Error();

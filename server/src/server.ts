@@ -30,6 +30,11 @@ io.on('connection', socket => {
     }
   });
 
+  socket.on('buyIn', ({ seatIdx, amount }) => {
+    game.buyIn(seatIdx, amount);
+    io.emit('state', game.state);
+  });
+
   socket.on('bet', ({ seatIdx, amount }) => {
     game.placeBet(seatIdx, amount);
     io.emit('state', game.state);
